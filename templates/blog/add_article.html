@@ -1,0 +1,53 @@
+{% load my_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="/static/js/jquery-3.1.1.js"></script>
+    <script src="/static/kindeditor/kindeditor-all.js"></script>
+    <link rel="stylesheet" href="/static/bs/css/bootstrap.css">
+</head>
+<body>
+<div class="header">
+      <p>文章添加页面</p>
+</div>
+
+<div class="row">
+  <div class="col-md-2">
+      {% get_menu username %}
+  </div>
+  <div class="col-md-9">
+      <div>
+          <p>添加文章</p>
+          <div>
+              <label for="">标题</label>
+              <input type="text" name="title">
+          </div>
+          <div>
+              <p>内容(TinyMCE编辑器，支持拖放/粘贴上传图片) </p>
+              <div>
+                  <textarea name="" id="editor_id" cols="50" rows="10"></textarea>
+              </div>
+              <button>submit</button>
+          </div>
+          {% csrf_token %}
+            <script>
+                    KindEditor.ready(function(K) {
+                            window.editor = K.create('#editor_id',{
+                                width:800,
+                                height:600,
+                                uploadJson:"/upload_img/",
+                                extraFileUploadParams:{
+                                    csrfmiddlewaretoken:$("[name='csrfmiddlewaretoken']").val()
+                                },
+                                filePostName:"put_img"
+
+                            });
+                    });
+            </script>
+      </div>
+  </div>
+</div>
+</body>
+</html>

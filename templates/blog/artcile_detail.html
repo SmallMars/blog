@@ -1,0 +1,172 @@
+{% extends "blog/home_site.html" %}
+
+
+{% block con %}
+   <div class="article_info">
+       <h3 class="text-center">{{ article_obj.title }}</h3>
+       <div class="content">
+           {{ article_obj.articledetail.content|safe }}
+       </div>
+   </div>
+
+   <div class="clearfix">
+        <div id="div_digg">
+        <div class="diggit digg" >
+            <span class="diggnum" id="digg_count">{{ article_obj.up_count }}</span>
+        </div>
+        <div class="buryit digg" >
+            <span class="burynum" id="bury_count">{{ article_obj.down_count  }}</span>
+        </div>
+
+   </div>
+   </div>
+     <div class="diggword pull-right"  id="digg_tips" style="color: red;"></div>
+
+    <div class="comment_floor">
+        <ul class="comment_list list-group">
+            {% for comment in comment_list %}
+                 <li class="comment_item list-group-item">
+                       <div>
+                           <a href=""><span>#{{ forloop.counter }}楼</span></a>&nbsp;&nbsp;
+                           <span>{{ comment.create_time|date:"Y-m-d H:i" }}</span>&nbsp;&nbsp;
+                           <span>{{ comment.user.username }}</span>
+                           <span class="pull-right"><a class="reply" username="{{ comment.user.username }}" comment_id="{{ comment.pk }}">回复</a></span>
+                       </div>
+                       {% if comment.parent_comment %}
+                           <div class="well">
+                                <p><a href="">@{{ comment.parent_comment.user.username }}</a></p>
+                                <p>{{ comment.parent_comment.content }}</p>
+                           </div>
+                       {% endif %}
+                       <div>
+                     <p>{{ comment.content|safe }}</p>
+                 </div>
+                 </li>
+            {% endfor %}
+
+        </ul>
+    </div>
+
+   <div class="comment-box">
+        <p>发表评论</p>
+        <p>昵称：<input type="text" disabled value="{{ request.user.username }}"></p>
+        <p>
+            <textarea name="" id="comment_region" cols="60" rows="10"></textarea>
+        </p>
+        <p >
+            <input type="button" class="btn btn-default comment_btn" value="submit">
+        </p>
+   </div>
+
+   {% csrf_token %}
+    <script>
+        // 给点赞踩灭按钮绑定事件
+        $('.digg').click(function () {
+            var is_up=$(this).hasClass("diggit");
+            var article_id="{{ article_obj.pk }}";
+            if ("{{ request.user.username }}"){
+                 $.ajax({
+                url:"/blog/up_down/",
+                type:"post",
+                data:{
+                    article_id:article_id,
+                    is_up:is_up,
+                    csrfmiddlewaretoken:$("[name='csrfmiddlewaretoken']").val(),
+
+                },
+                success:function (data) {
+                    console.log(data); // {}
+                    if(data.state){
+                        if(is_up){
+                            var val=parseInt($("#digg_count").html())+1;
+                            $("#digg_count").html(val)
+                        }else{
+                            var val=parseInt($("#bury_count").html())+1;
+                            $("#bury_count").html(val);
+                        }
+                    }
+                    else{
+                        if(data.err){
+                            $(".diggword").html("您已经推荐过");
+                        }
+                        else{
+                            $(".diggword").html("您已经踩灭过")
+                        }
+                        setTimeout(function () {
+                            $(".diggword").html("")
+                        },1000)
+                    }
+
+                }
+            })
+            }
+            else{
+                location.href="/login/"
+            }
+
+        });
+       // 绑定提交评论事件
+        $(".comment_btn").click(function () {
+            if (parent_comment_id){
+                var s=$("#comment_region").val();
+
+                if (s.charAt(0)=="@"){
+                     var index=s.indexOf("\n");
+                     var content=s.slice(index+1);
+                }
+                else {
+                    var content=$("#comment_region").val();
+                    parent_comment_id=""
+                }
+
+            }else {
+                var content=$("#comment_region").val();
+
+            }
+
+
+
+
+
+            var article_id="{{ article_obj.pk }}";
+            $.ajax({
+                url:"/blog/comment/",
+                type:"post",
+                data:{
+                    pid:parent_comment_id,
+                    content:content,
+                    article_id:article_id,
+                    csrfmiddlewaretoken:$("[name='csrfmiddlewaretoken']").val(),
+                },
+                success:function (data) {
+                    console.log(data);
+                    var create_time=data.create_time;
+                    var username="{{ request.user.username }}";
+                    var con=data.content;
+
+                    s= '<li class="comment_item list-group-item"><div><span>'+create_time+'</span>&nbsp;&nbsp;<span>'+username+'</span><span class="pull-right"><a class="del" username="'+username+'">删除</a></span></div><div><p>'+con+'</p></div></li>'
+                    $(".comment_list ").append(s);
+
+                    $("#comment_region").val("");
+                    parent_comment_id="";
+                }
+            })
+
+        });
+
+
+       // 回复按钮绑定事件
+       var parent_comment_id="";
+       $(".reply").click(function () {
+           parent_comment_id=$(this).attr("comment_id");
+           $("#comment_region").focus();
+           var val="@"+$(this).attr("username")+"\n";
+           $("#comment_region").val(val)
+       })
+
+    </script>
+
+
+{% endblock %}
+
+
